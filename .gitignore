@@ -58,5 +58,5 @@ reference/
 docs/ 
 
 # Local data
-data/
+src/data/
 logs/
