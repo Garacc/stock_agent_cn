@@ -407,8 +407,7 @@ def get_price_history(symbol: str, start_date: str = None, end_date: str = None,
         # 计算动量指标
         df["momentum_1m"] = df["close"].pct_change(periods=20)  # 20个交易日约等于1个月
         df["momentum_3m"] = df["close"].pct_change(periods=60)  # 60个交易日约等于3个月
-        df["momentum_6m"] = df["close"].pct_change(
-            periods=120)  # 120个交易日约等于6个月
+        df["momentum_6m"] = df["close"].pct_change(periods=120)  # 120个交易日约等于6个月
 
         # 计算成交量动量（相对于20日平均成交量的变化）
         df["volume_ma20"] = df["volume"].rolling(window=20).mean()
@@ -417,8 +416,7 @@ def get_price_history(symbol: str, start_date: str = None, end_date: str = None,
         # 计算波动率指标
         # 1. 历史波动率 (20日)
         returns = df["close"].pct_change()
-        df["historical_volatility"] = returns.rolling(
-            window=20).std() * np.sqrt(252)  # 年化
+        df["historical_volatility"] = returns.rolling(window=20).std() * np.sqrt(252)  # 年化
 
         # 2. 波动率区间 (相对于过去120天的波动率的位置)
         volatility_120d = returns.rolling(window=120).std() * np.sqrt(252)

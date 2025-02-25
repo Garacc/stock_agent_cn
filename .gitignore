@@ -56,3 +56,7 @@ reference/
 
 # Documentation
 docs/ 
+
+# Local data
+data/
+logs/
