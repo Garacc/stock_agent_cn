@@ -12,6 +12,10 @@ from langgraph.graph import END, StateGraph
 from langchain_core.messages import HumanMessage
 import akshare as ak
 import pandas as pd
+from src.utils.logger_config import setup_api_logger
+
+# Initialize logging system
+logger = setup_api_logger()
 
 
 ##### Run the Hedge Fund #####
