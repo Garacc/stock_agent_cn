@@ -1,4 +1,4 @@
-from src.tools.news_crawler import get_stock_news
+from src.utils.news_crawler import get_stock_news
 import os
 import sys
 import json

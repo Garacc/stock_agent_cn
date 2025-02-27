@@ -9,7 +9,7 @@ import json
 import pandas as pd
 import numpy as np
 
-from src.tools.api import prices_to_df
+from src.utils.api import prices_to_df
 
 
 ##### Technical Analyst #####
@@ -314,7 +314,7 @@ def calculate_momentum_signals(prices_df):
     returns = prices_df['close'].pct_change()
     mom_1m = returns.rolling(21, min_periods=5).sum()  # 短期动量允许较少数据点
     mom_3m = returns.rolling(63, min_periods=42).sum()  # 中期动量要求更多数据点
-    mom_6m = returns.rolling(126, min_periods=63).sum()  # 长期动量保持严格要求
+    mom_6m = returns.rolling(126, min_periods=63).sum()  # 长期动量保持严格执行
 
     # Volume momentum
     volume_ma = prices_df['volume'].rolling(21, min_periods=10).mean()

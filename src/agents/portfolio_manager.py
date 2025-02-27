@@ -1,6 +1,6 @@
 from langchain_core.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
-from src.tools.openrouter_config import get_chat_completion
+from src.utils.openrouter_config import get_chat_completion
 import json
 
 from src.agents.state import AgentState, show_agent_reasoning
