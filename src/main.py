@@ -16,7 +16,7 @@ from src.utils.logger_config import setup_logger, get_logger
 
 
 ##### Run the Hedge Fund #####
-def run_hedge_fund(app, model: str, ticker: str, start_date: str, end_date: str, portfolio: dict, show_reasoning: bool = False, num_of_news: int = 5):
+def run_hedge_fund(app, model: list, ticker: str, start_date: str, end_date: str, portfolio: dict, show_reasoning: bool = False, num_of_news: int = 5):
     final_state = app.invoke(
         {
             "messages": [

@@ -4,30 +4,41 @@ from langchain_core.messages import HumanMessage
 
 from src.agents.state import AgentState, show_agent_reasoning
 from src.utils.api import prices_to_df
+from src.utils.logger_config import get_logger, SUCCESS_ICON, ERROR_ICON, WAIT_ICON
 
 import json
 import ast
+
+# 设置日志记录
+logger = get_logger()
 
 ##### Risk Management Agent #####
 
 
 def risk_management_agent(state: AgentState):
     """Evaluates portfolio risk and sets position limits based on comprehensive risk analysis."""
+    logger.info("[RISK_MANAGEMENT_AGENT] 开始执行风险控制Agent ...")
     show_reasoning = state["metadata"]["show_reasoning"]
     portfolio = state["data"]["portfolio"]
     data = state["data"]
 
     prices_df = prices_to_df(data["prices"])
-
+    
     # Fetch messages from other agents
-    technical_message = next(
-        msg for msg in state["messages"] if msg.name == "technical_analyst_agent")
-    fundamentals_message = next(
-        msg for msg in state["messages"] if msg.name == "fundamentals_agent")
-    sentiment_message = next(
-        msg for msg in state["messages"] if msg.name == "sentiment_agent")
-    valuation_message = next(
-        msg for msg in state["messages"] if msg.name == "valuation_agent")
+    try:
+        technical_message = next(
+            msg for msg in state["messages"] if msg.name == "technical_analyst_agent")
+        fundamentals_message = next(
+            msg for msg in state["messages"] if msg.name == "fundamentals_agent")
+        sentiment_message = next(
+            msg for msg in state["messages"] if msg.name == "sentiment_agent")
+        valuation_message = next(
+            msg for msg in state["messages"] if msg.name == "valuation_agent")
+        logger.info(f"{SUCCESS_ICON} 成功获取所有代理消息")
+    except Exception as e:
+        logger.error(f"{ERROR_ICON} 获取代理消息失败: {e}")
+        raise
+        
     try:
         fundamental_signals = json.loads(fundamentals_message.content)
         technical_signals = json.loads(technical_message.content)
@@ -186,6 +197,8 @@ def risk_management_agent(state: AgentState):
 
     if show_reasoning:
         show_agent_reasoning(message_content, "Risk Management Agent")
+
+    logger.info(f"{SUCCESS_ICON} [RISK_MANAGEMENT_AGENT] 风险控制Agent执行完成。")
 
     return {
         "messages": state["messages"] + [message],

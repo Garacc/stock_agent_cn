@@ -245,22 +245,25 @@ def get_news_sentiment(news_list: list, num_of_news: int = 5, model: list = ["mo
                 sentiment_scores.append(sentiment_score)
             except ValueError as e:
                 logger.error(f"{ERROR_ICON} 模型 {res_model} 解析情感得分出错: {e}")
-                logger.error(f"{ERROR_ICON} 原始结果: {result}")
+                logger.error(f"{ERROR_ICON} 原始结果: {res_score}")
                 continue
-
+    
         # 确保分数在-1到1之间
-        sentiment_score_combine = max(-1.0, min(1.0, sum(sentiment_scores) * 1.0/len(sentiment_scores)))
+        if len(sentiment_scores) > 0:
+            sentiment_score_combine = max(-1.0, min(1.0, sum(sentiment_scores) * 1.0/len(sentiment_scores)))
+        else:
+            sentiment_score_combine = 0.0  # 如果没有有效的情感分数，返回中性值
+        
+            # 缓存结果
+            cache[news_key] = sentiment_score_combine
+            try:
+                with open(cache_file, 'w', encoding='utf-8') as f:
+                    json.dump(cache, f, ensure_ascii=False, indent=2)
+                logger.info(f"{SUCCESS_ICON} 情感分析结果已缓存")
+            except Exception as e:
+                logger.error(f"{ERROR_ICON} 写入缓存出错: {e}")
 
-        # 缓存结果
-        cache[news_key] = sentiment_score_combine
-        try:
-            with open(cache_file, 'w', encoding='utf-8') as f:
-                json.dump(cache, f, ensure_ascii=False, indent=2)
-            logger.info(f"{SUCCESS_ICON} 情感分析结果已缓存")
-        except Exception as e:
-            logger.error(f"{ERROR_ICON} 写入缓存出错: {e}")
-
-        return sentiment_score
+            return sentiment_score_combine  # 修正返回值
 
     except Exception as e:
         logger.error(f"{ERROR_ICON} 分析新闻情感时出错: {e}")

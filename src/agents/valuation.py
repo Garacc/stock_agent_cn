@@ -1,10 +1,14 @@
 from langchain_core.messages import HumanMessage
 from src.agents.state import AgentState, show_agent_reasoning
+from src.utils.logger_config import get_logger, SUCCESS_ICON, ERROR_ICON, WAIT_ICON
 import json
 
+# 设置日志记录
+logger = get_logger()
 
 def valuation_agent(state: AgentState):
     """Performs detailed valuation analysis using multiple methodologies."""
+    logger.info("[VALUATION_AGENT] 开始执行价值评估Agent ...")
     show_reasoning = state["metadata"]["show_reasoning"]
     data = state["data"]
     metrics = data["financial_metrics"][0]
@@ -17,7 +21,8 @@ def valuation_agent(state: AgentState):
     # Calculate working capital change
     working_capital_change = (current_financial_line_item.get(
         'working_capital') or 0) - (previous_financial_line_item.get('working_capital') or 0)
-
+    
+    logger.info(f"{WAIT_ICON} 计算所有者收益价值...")
     # Owner Earnings Valuation (Buffett Method)
     owner_earnings_value = calculate_owner_earnings_value(
         net_income=current_financial_line_item.get('net_income'),
@@ -29,7 +34,9 @@ def valuation_agent(state: AgentState):
         required_return=0.15,
         margin_of_safety=0.25
     )
+    logger.info(f"{SUCCESS_ICON} 所有者收益价值: {owner_earnings_value:,.2f}")
 
+    logger.info(f"{WAIT_ICON} 计算DCF内在价值...")
     # DCF Valuation
     dcf_value = calculate_intrinsic_value(
         free_cash_flow=current_financial_line_item.get('free_cash_flow'),
@@ -38,6 +45,7 @@ def valuation_agent(state: AgentState):
         terminal_growth_rate=0.03,
         num_years=5,
     )
+    logger.info(f"{SUCCESS_ICON} DCF内在价值: {dcf_value:,.2f}")
 
     # Calculate combined valuation gap (average of both methods)
     dcf_gap = (dcf_value - market_cap) / market_cap
@@ -74,6 +82,10 @@ def valuation_agent(state: AgentState):
 
     if show_reasoning:
         show_agent_reasoning(message_content, "Valuation Analysis Agent")
+    
+    logger.info(f"{SUCCESS_ICON} 估值分析代理处理完成，信号: {signal}，置信度: {message_content['confidence']}")
+
+    logger.info(f"{SUCCESS_ICON} [VALUATION_AGENT] 价值评估Agent执行完成。")
 
     return {
         "messages": [message],
@@ -149,7 +161,7 @@ def calculate_owner_earnings_value(
         return max(value_with_safety_margin, 0)  # 确保不返回负值
 
     except Exception as e:
-        print(f"所有者收益计算错误: {e}")
+        logger.error(f"{ERROR_ICON} 所有者收益计算错误: {e}")
         return 0
 
 
@@ -203,7 +215,7 @@ def calculate_intrinsic_value(
         return max(total_value, 0)  # 确保不返回负值
 
     except Exception as e:
-        print(f"DCF计算错误: {e}")
+        logger.error(f"{ERROR_ICON} DCF计算错误: {e}")
         return 0
 
 
