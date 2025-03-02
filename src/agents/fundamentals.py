@@ -1,5 +1,5 @@
 from langchain_core.messages import HumanMessage
-
+from src.utils.logger_config import get_logger, ERROR_ICON, SUCCESS_ICON
 from src.agents.state import AgentState, show_agent_reasoning
 
 import json
@@ -9,6 +9,7 @@ import json
 
 def fundamentals_agent(state: AgentState):
     """Analyzes fundamental data and generates trading signals."""
+    logger.info("[FUNDAMENTALS_AGENT] 开始执行基本面分析Agent ...")
     show_reasoning = state["metadata"]["show_reasoning"]
     data = state["data"]
     metrics = data["financial_metrics"][0]
@@ -162,6 +163,8 @@ def fundamentals_agent(state: AgentState):
     # Print the reasoning if the flag is set
     if show_reasoning:
         show_agent_reasoning(message_content, "Fundamental Analysis Agent")
+
+    logger.info(f"{SUCCESS_ICON} [FUNDAMENTALS_AGENT] 基本面分析Agent执行完成。")
 
     return {
         "messages": [message],
