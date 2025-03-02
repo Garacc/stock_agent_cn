@@ -10,21 +10,17 @@ from src.utils.logger_config import setup_api_logger, SUCCESS_ICON, ERROR_ICON, 
 # 设置日志记录
 logger = setup_api_logger()
 
-
 @dataclass
 class ChatMessage:
     content: str
-
 
 @dataclass
 class ChatChoice:
     message: ChatMessage
 
-
 @dataclass
 class ChatCompletion:
     choices: list[ChatChoice]
-
 
 # 获取项目根目录
 project_root = os.path.dirname(os.path.dirname(
