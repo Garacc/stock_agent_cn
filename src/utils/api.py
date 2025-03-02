@@ -2,64 +2,66 @@ from typing import Dict, Any, List
 import pandas as pd
 import akshare as ak
 from datetime import datetime, timedelta
+from src.utils.logger_config import get_logger, ERROR_ICON, SUCCESS_ICON, WAIT_ICON
 import json 
 import numpy as np
 
+# 设置日志记录
+logger = get_logger()
 
 def get_financial_metrics(symbol: str) -> Dict[str, Any]:
     """获取财务指标数据"""
     try:
-        print(f"\n正在获取 {symbol} 的财务指标数据...")
+        logger.info(f"{WAIT_ICON} 正在获取 {symbol} 的财务指标数据...")
 
         # 获取实时行情数据（用于市值和估值比率）
-        print("获取实时行情...")
+        logger.info(f"{WAIT_ICON} 获取实时行情...")
         realtime_data = ak.stock_zh_a_spot_em()
         if realtime_data is None or realtime_data.empty:
-            print("警告：无法获取实时行情数据")
+            logger.error(f"{ERROR_ICON} 警告：无法获取实时行情数据")
             return [{}]
 
         stock_data = realtime_data[realtime_data['代码'] == symbol]
         if stock_data.empty:
-            print(f"警告：未找到股票 {symbol} 的实时行情数据")
+            logger.error(f"{ERROR_ICON} 警告：未找到股票 {symbol} 的实时行情数据")
             return [{}]
 
         stock_data = stock_data.iloc[0]
-        print("成功获取实时行情数据")
+        logger.info(f"{SUCCESS_ICON} 成功获取实时行情数据")
 
         # 获取新浪财务指标
-        print("\n获取新浪财务指标...")
+        logger.info(f"{WAIT_ICON} 获取新浪财务指标...")
         current_year = datetime.now().year
         financial_data = ak.stock_financial_analysis_indicator(
             symbol=symbol, start_year=str(current_year-1))
         if financial_data is None or financial_data.empty:
-            print("警告：无法获取新浪财务指标数据")
+            logger.error(f"{ERROR_ICON} 警告：无法获取新浪财务指标数据")
             return [{}]
 
         # 按日期排序并获取最新的数据
         financial_data['日期'] = pd.to_datetime(financial_data['日期'])
         financial_data = financial_data.sort_values('日期', ascending=False)
-        latest_financial = financial_data.iloc[0] if not financial_data.empty else pd.Series(
-        )
-        print(f"成功获取新浪财务指标数据，共 {len(financial_data)} 条记录")
-        print(f"最新数据日期：{latest_financial.get('日期')}")
+        latest_financial = financial_data.iloc[0] if not financial_data.empty else pd.Series()
+        logger.info(f"{SUCCESS_ICON} 成功获取新浪财务指标数据，共 {len(financial_data)} 条记录")
+        logger.info(f"{SUCCESS_ICON} 最新数据日期：{latest_financial.get('日期')}")
 
         # 获取利润表数据（用于计算 price_to_sales）
-        print("\n获取利润表数据...")
+        logger.info(f"{WAIT_ICON} 获取利润表数据...")
         try:
             income_statement = ak.stock_financial_report_sina(
                 stock=f"sh{symbol}", symbol="利润表")
             if not income_statement.empty:
                 latest_income = income_statement.iloc[0]
-                print("成功获取利润表数据")
+                logger.info(f"{SUCCESS_ICON} 成功获取利润表数据")
             else:
-                print("警告：无法获取利润表数据")
+                logger.error(f"{ERROR_ICON} 警告：无法获取利润表数据")
                 latest_income = pd.Series()
         except Exception as e:
-            print(f"获取利润表数据时出错：{e}")
+            logger.error(f"{ERROR_ICON} 获取利润表数据时出错：{e}")
             latest_income = pd.Series()
 
         # 构建完整指标数据
-        print("\n构建指标数据...")
+        logger.info(f"{WAIT_ICON} 构建指标数据...")
         try:
             def convert_percentage(value: float) -> float:
                 """将百分比值转换为小数"""
@@ -121,35 +123,35 @@ def get_financial_metrics(symbol: str) -> Dict[str, Any]:
                 "price_to_sales": all_metrics["price_to_sales"],
             }
 
-            print("成功构建指标数据")
+            logger.info("成功构建指标数据")
 
             # 打印所有获取到的指标数据（用于调试）
-            print("\n获取到的完整指标数据：")
+            logger.info(f"{SUCCESS_ICON} 获取到的完整指标数据：")
             for key, value in all_metrics.items():
-                print(f"{key}: {value}")
+                logger.info(f"{key}: {value}")
 
-            print("\n传递给 agent 的指标数据：")
+            logger.info(f"{SUCCESS_ICON} 传递给 agent 的指标数据：")
             for key, value in agent_metrics.items():
-                print(f"{key}: {value}")
+                logger.info(f"{key}: {value}")
 
             return [agent_metrics]
 
         except Exception as e:
-            print(f"构建指标数据时出错：{e}")
+            logger.error(f"构建指标数据时出错：{e}")
             return [{}]
 
     except Exception as e:
-        print(f"获取财务指标时出错：{e}")
+        logger.error(f"获取财务指标时出错：{e}")
         return [{}]
 
 
 def get_financial_statements(symbol: str) -> Dict[str, Any]:
     """获取财务报表数据"""
     try:
-        print(f"\n正在获取 {symbol} 的财务报表数据...")
+        logger.info(f"{WAIT_ICON} 正在获取 {symbol} 的财务报表数据...")
 
         # 获取资产负债表数据
-        print("\n获取资产负债表数据...")
+        logger.info(f"{WAIT_ICON} 获取资产负债表数据...")
         try:
             balance_sheet = ak.stock_financial_report_sina(
                 stock=f"sh{symbol}", symbol="资产负债表")
@@ -157,18 +159,18 @@ def get_financial_statements(symbol: str) -> Dict[str, Any]:
                 latest_balance = balance_sheet.iloc[0]
                 previous_balance = balance_sheet.iloc[1] if len(
                     balance_sheet) > 1 else balance_sheet.iloc[0]
-                print("成功获取资产负债表数据")
+                logger.info(f"{SUCCESS_ICON} 成功获取资产负债表数据")
             else:
-                print("警告：无法获取资产负债表数据")
+                logger.error(f"{ERROR_ICON} 警告：无法获取资产负债表数据")
                 latest_balance = pd.Series()
                 previous_balance = pd.Series()
         except Exception as e:
-            print(f"获取资产负债表数据时出错：{e}")
+            logger.error(f"{ERROR_ICON} 获取资产负债表数据时出错：{e}")
             latest_balance = pd.Series()
             previous_balance = pd.Series()
 
         # 获取利润表数据
-        print("\n获取利润表数据...")
+        logger.info("获取利润表数据...")
         try:
             income_statement = ak.stock_financial_report_sina(
                 stock=f"sh{symbol}", symbol="利润表")
@@ -176,18 +178,18 @@ def get_financial_statements(symbol: str) -> Dict[str, Any]:
                 latest_income = income_statement.iloc[0]
                 previous_income = income_statement.iloc[1] if len(
                     income_statement) > 1 else income_statement.iloc[0]
-                print("成功获取利润表数据")
+                logger.info(f"{SUCCESS_ICON} 成功获取利润表数据")
             else:
-                print("警告：无法获取利润表数据")
+                logger.warning(f"警告：无法获取利润表数据")
                 latest_income = pd.Series()
                 previous_income = pd.Series()
         except Exception as e:
-            print(f"获取利润表数据时出错：{e}")
+            logger.error(f"获取利润表数据时出错：{e}")
             latest_income = pd.Series()
             previous_income = pd.Series()
 
         # 获取现金流量表数据
-        print("\n获取现金流量表数据...")
+        logger.info(f"{WAIT_ICON} 获取现金流量表数据...")
         try:
             cash_flow = ak.stock_financial_report_sina(
                 stock=f"sh{symbol}", symbol="现金流量表")
@@ -195,13 +197,13 @@ def get_financial_statements(symbol: str) -> Dict[str, Any]:
                 latest_cash_flow = cash_flow.iloc[0]
                 previous_cash_flow = cash_flow.iloc[1] if len(
                     cash_flow) > 1 else cash_flow.iloc[0]
-                print("成功获取现金流量表数据")
+                logger.info(f"{SUCCESS_ICON} 成功获取现金流量表数据")
             else:
-                print("警告：无法获取现金流量表数据")
+                logger.error(f"{ERROR_ICON} 警告：无法获取现金流量表数据")
                 latest_cash_flow = pd.Series()
                 previous_cash_flow = pd.Series()
         except Exception as e:
-            print(f"获取现金流量表数据时出错：{e}")
+            logger.error(f"{ERROR_ICON} 获取现金流量表数据时出错：{e}")
             latest_cash_flow = pd.Series()
             previous_cash_flow = pd.Series()
 
@@ -224,7 +226,7 @@ def get_financial_statements(symbol: str) -> Dict[str, Any]:
                 "free_cash_flow": float(latest_cash_flow.get("经营活动产生的现金流量净额", 0)) - abs(float(latest_cash_flow.get("购建固定资产、无形资产和其他长期资产支付的现金", 0)))
             }
             line_items.append(current_item)
-            print("成功处理最新期间数据")
+            logger.info(f"{SUCCESS_ICON} 成功处理最新期间数据")
 
             # 处理上一期间数据
             previous_item = {
@@ -237,10 +239,10 @@ def get_financial_statements(symbol: str) -> Dict[str, Any]:
                 "free_cash_flow": float(previous_cash_flow.get("经营活动产生的现金流量净额", 0)) - abs(float(previous_cash_flow.get("购建固定资产、无形资产和其他长期资产支付的现金", 0)))
             }
             line_items.append(previous_item)
-            print("成功处理上一期间数据")
+            logger.info(f"{SUCCESS_ICON} 成功处理上一期间数据")
 
         except Exception as e:
-            print(f"处理财务数据时出错：{e}")
+            logger.error(f"{ERROR_ICON} 处理财务数据时出错：{e}")
             default_item = {
                 "net_income": 0,
                 "operating_revenue": 0,
@@ -255,7 +257,7 @@ def get_financial_statements(symbol: str) -> Dict[str, Any]:
         return line_items
 
     except Exception as e:
-        print(f"获取财务报表时出错：{e}")
+        logger.error(f"{ERROR_ICON} 获取财务报表时出错：{e}")
         default_item = {
             "net_income": 0,
             "operating_revenue": 0,
@@ -285,7 +287,7 @@ def get_market_data(symbol: str) -> Dict[str, Any]:
         }
 
     except Exception as e:
-        print(f"Error getting market data: {e}")
+        logger.error(f"{ERROR_ICON} 获取市场数据失败: {e}")
         return {}
 
 
@@ -347,9 +349,9 @@ def get_price_history(symbol: str, start_date: str = None, end_date: str = None,
         else:
             start_date = datetime.strptime(start_date, "%Y-%m-%d")
 
-        print(f"\n正在获取 {symbol} 的历史行情数据...")
-        print(f"开始日期：{start_date.strftime('%Y-%m-%d')}")
-        print(f"结束日期：{end_date.strftime('%Y-%m-%d')}")
+        logger.info(f"{WAIT_ICON} 正在获取 {symbol} 的历史行情数据...")
+        logger.info(f"开始日期：{start_date.strftime('%Y-%m-%d')}")
+        logger.info(f"结束日期：{end_date.strftime('%Y-%m-%d')}")
 
         def get_and_process_data(start_date, end_date):
             """获取并处理数据，包括重命名列等操作"""
@@ -387,22 +389,22 @@ def get_price_history(symbol: str, start_date: str = None, end_date: str = None,
         df = get_and_process_data(start_date, end_date)
 
         if df is None or df.empty:
-            print(f"警告：未获取到 {symbol} 的历史行情数据")
+            logger.error(f"{ERROR_ICON} 警告：未获取到 {symbol} 的历史行情数据")
             return pd.DataFrame()
 
         # 检查数据量是否足够
         min_required_days = 120  # 至少需要120个交易日的数据
         if len(df) < min_required_days:
-            print(
-                f"警告：获取到的数据量（{len(df)}条）不足以计算所有技术指标（需要至少{min_required_days}条）")
-            print("尝试获取更长时间范围的数据...")
+            logger.error(
+                f"{ERROR_ICON} 警告：获取到的数据量（{len(df)}条）不足以计算所有技术指标（需要至少{min_required_days}条）")
+            logger.info(f"{WAIT_ICON} 尝试获取更长时间范围的数据...")
 
             # 扩大时间范围到2年
             start_date = end_date - timedelta(days=730)
             df = get_and_process_data(start_date, end_date)
 
             if len(df) < min_required_days:
-                print(f"警告：即使扩大时间范围，数据量（{len(df)}条）仍然不足")
+                logger.error(f"{ERROR_ICON} 警告：即使扩大时间范围，数据量（{len(df)}条）仍然不足")
 
         # 计算动量指标
         df["momentum_1m"] = df["close"].pct_change(periods=20)  # 20个交易日约等于1个月
@@ -518,19 +520,19 @@ def get_price_history(symbol: str, start_date: str = None, end_date: str = None,
         # 重置索引
         df = df.reset_index(drop=True)
 
-        print(f"成功获取历史行情数据，共 {len(df)} 条记录")
+        logger.info(f"成功获取历史行情数据，共 {len(df)} 条记录")
 
         # 检查并报告NaN值
         nan_columns = df.isna().sum()
         if nan_columns.any():
-            print("\n警告：以下指标存在NaN值：")
+            logger.error(f"{ERROR_ICON} 警告：以下指标存在NaN值：")
             for col, nan_count in nan_columns[nan_columns > 0].items():
-                print(f"- {col}: {nan_count}条")
+                logger.error(f"{ERROR_ICON} - {col}: {nan_count}条")
 
         return df
 
     except Exception as e:
-        print(f"获取历史行情数据时出错：{e}")
+        logger.error(f"{ERROR_ICON} 获取历史行情数据时出错：{e}")
         return pd.DataFrame()
 
 
@@ -566,7 +568,7 @@ def prices_to_df(prices):
 
         return df
     except Exception as e:
-        print(f"转换价格数据时出错: {str(e)}")
+        logger.error(f"{ERROR_ICON} 转换价格数据时出错: {str(e)}")
         # 返回一个包含必要列的空DataFrame
         return pd.DataFrame(columns=['close', 'open', 'high', 'low', 'volume'])
 

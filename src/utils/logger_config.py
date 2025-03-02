@@ -41,7 +41,7 @@ def setup_logger(name='stock_agent', log_level=logging.INFO):
     os.makedirs(log_dir, exist_ok=True)
     
     # 设置文件处理器
-    log_file = os.path.join(log_dir, f'{name}_{time.strftime("%Y%m%d")}.log')
+    log_file = os.path.join(log_dir, f'{name}_{time.strftime("%Y%m%d_%H%M")}.log')
     print(f"Creating log file at: {log_file}")
     
     try:
@@ -70,8 +70,16 @@ def setup_logger(name='stock_agent', log_level=logging.INFO):
     logger.info("Logger initialization completed")
     logger.info(f"{name} logging system started")
     
+    
     # 保存为全局 logger
     _global_logger = logger
+    
+    # # 打印当前函数被调用的路径
+    # import traceback
+    # caller_info = traceback.extract_stack()
+    # if len(caller_info) > 1:
+    #     caller = caller_info[-2]  # -2 是因为 -1 是当前函数
+    #     logger.info(f"Logger initialized from: {caller.filename}, line {caller.lineno}, in {caller.name}")
     
     return logger
 
