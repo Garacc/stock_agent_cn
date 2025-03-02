@@ -12,14 +12,11 @@ from langgraph.graph import END, StateGraph
 from langchain_core.messages import HumanMessage
 import akshare as ak
 import pandas as pd
-from src.utils.logger_config import setup_api_logger
-
-# Initialize logging system
-logger = setup_api_logger()
+from src.utils.logger_config import setup_logger, get_logger
 
 
 ##### Run the Hedge Fund #####
-def run_hedge_fund(ticker: str, start_date: str, end_date: str, portfolio: dict, show_reasoning: bool = False, num_of_news: int = 5):
+def run_hedge_fund(app, ticker: str, start_date: str, end_date: str, portfolio: dict, show_reasoning: bool = False, num_of_news: int = 5):
     final_state = app.invoke(
         {
             "messages": [
@@ -42,35 +39,43 @@ def run_hedge_fund(ticker: str, start_date: str, end_date: str, portfolio: dict,
     return final_state["messages"][-1].content
 
 
-# Define the new workflow
-workflow = StateGraph(AgentState)
+def build_hedge_workflow():
+    # Define the new workflow
+    workflow = StateGraph(AgentState)
 
-# Add nodes
-workflow.add_node("market_data_agent", market_data_agent)
-workflow.add_node("technical_analyst_agent", technical_analyst_agent)
-workflow.add_node("fundamentals_agent", fundamentals_agent)
-workflow.add_node("sentiment_agent", sentiment_agent)
-workflow.add_node("risk_management_agent", risk_management_agent)
-workflow.add_node("portfolio_management_agent", portfolio_management_agent)
-workflow.add_node("valuation_agent", valuation_agent)
+    # Add nodes
+    workflow.add_node("market_data_agent", market_data_agent)
+    workflow.add_node("technical_analyst_agent", technical_analyst_agent)
+    workflow.add_node("fundamentals_agent", fundamentals_agent)
+    workflow.add_node("sentiment_agent", sentiment_agent)
+    workflow.add_node("risk_management_agent", risk_management_agent)
+    workflow.add_node("portfolio_management_agent", portfolio_management_agent)
+    workflow.add_node("valuation_agent", valuation_agent)
 
-# Define the workflow
-workflow.set_entry_point("market_data_agent")
-workflow.add_edge("market_data_agent", "technical_analyst_agent")
-workflow.add_edge("market_data_agent", "fundamentals_agent")
-workflow.add_edge("market_data_agent", "sentiment_agent")
-workflow.add_edge("market_data_agent", "valuation_agent")
-workflow.add_edge("technical_analyst_agent", "risk_management_agent")
-workflow.add_edge("fundamentals_agent", "risk_management_agent")
-workflow.add_edge("sentiment_agent", "risk_management_agent")
-workflow.add_edge("valuation_agent", "risk_management_agent")
-workflow.add_edge("risk_management_agent", "portfolio_management_agent")
-workflow.add_edge("portfolio_management_agent", END)
+    # Define the workflow
+    workflow.set_entry_point("market_data_agent")
+    workflow.add_edge("market_data_agent", "technical_analyst_agent")
+    workflow.add_edge("market_data_agent", "fundamentals_agent")
+    workflow.add_edge("market_data_agent", "sentiment_agent")
+    workflow.add_edge("market_data_agent", "valuation_agent")
+    workflow.add_edge("technical_analyst_agent", "risk_management_agent")
+    workflow.add_edge("fundamentals_agent", "risk_management_agent")
+    workflow.add_edge("sentiment_agent", "risk_management_agent")
+    workflow.add_edge("valuation_agent", "risk_management_agent")
+    workflow.add_edge("risk_management_agent", "portfolio_management_agent")
+    workflow.add_edge("portfolio_management_agent", END)
 
-app = workflow.compile()
+    app = workflow.compile()
+    
+    return app
 
 # Add this at the bottom of the file
 if __name__ == "__main__":
+    # Initialize logging system
+    logger = get_logger()
+    logger.info("启动StockAgent...")
+    
+    # Parse command line arguments
     parser = argparse.ArgumentParser(
         description='Run the hedge fund trading system')
     parser.add_argument('--ticker', type=str, required=True,
@@ -89,6 +94,10 @@ if __name__ == "__main__":
                         help='Initial stock position (default: 0)')
 
     args = parser.parse_args()
+
+    logger.info("系统入参:")
+    for arg_name, arg_value in vars(args).items():
+        logger.info("{} = {}".format(arg_name, arg_value))
 
     # Set end date to yesterday if not specified
     current_date = datetime.now()
@@ -111,6 +120,9 @@ if __name__ == "__main__":
         raise ValueError("Number of news articles must be at least 1")
     if args.num_of_news > 100:
         raise ValueError("Number of news articles cannot exceed 100")
+    
+    logger.info("start_date: {}".format(start_date.strftime('%Y-%m-%d')))
+    logger.info("end_date: {}".format(end_date.strftime('%Y-%m-%d')))
 
     # Configure portfolio
     portfolio = {
@@ -118,7 +130,10 @@ if __name__ == "__main__":
         "stock": args.initial_position
     }
 
+    app = build_hedge_workflow()
+
     result = run_hedge_fund(
+        app=app,
         ticker=args.ticker,
         start_date=start_date.strftime('%Y-%m-%d'),
         end_date=end_date.strftime('%Y-%m-%d'),
@@ -126,8 +141,8 @@ if __name__ == "__main__":
         show_reasoning=args.show_reasoning,
         num_of_news=args.num_of_news
     )
-    print("\nFinal Result:")
-    print(result)
+    logger.info("Final Result:")
+    logger.info(result)
 
 
 def get_historical_data(symbol: str) -> pd.DataFrame:
