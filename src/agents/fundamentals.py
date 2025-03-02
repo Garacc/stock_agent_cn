@@ -4,9 +4,10 @@ from src.agents.state import AgentState, show_agent_reasoning
 
 import json
 
+# 设置日志记录
+logger = get_logger()
+
 ##### Fundamental Agent #####
-
-
 def fundamentals_agent(state: AgentState):
     """Analyzes fundamental data and generates trading signals."""
     logger.info("[FUNDAMENTALS_AGENT] 开始执行基本面分析Agent ...")

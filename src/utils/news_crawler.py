@@ -6,9 +6,12 @@ import akshare as ak
 import requests
 from bs4 import BeautifulSoup
 from src.utils.openrouter_config import get_chat_completion
+from src.utils.logger_config import get_logger, SUCCESS_ICON, ERROR_ICON, WAIT_ICON
 import time
 import pandas as pd
 
+# 设置日志记录
+logger = get_logger()
 
 def get_stock_news(symbol: str, max_news: int = 10) -> list:
     """获取并处理个股新闻
@@ -34,21 +37,19 @@ def get_stock_news(symbol: str, max_news: int = 10) -> list:
     today = datetime.now().strftime("%Y-%m-%d")
 
     # 构建新闻文件路径
-    # project_root = os.path.dirname(os.path.dirname(
-    #     os.path.dirname(os.path.abspath(__file__))))
     news_dir = os.path.join("src", "data", "stock_news")
-    print(f"新闻保存目录: {news_dir}")
+    logger.info(f"{WAIT_ICON} 新闻保存目录: {news_dir}")
 
     # 确保目录存在
     try:
         os.makedirs(news_dir, exist_ok=True)
-        print(f"成功创建或确认目录存在: {news_dir}")
+        logger.info(f"{SUCCESS_ICON} 成功创建或确认目录存在: {news_dir}")
     except Exception as e:
-        print(f"创建目录失败: {e}")
+        logger.error(f"{ERROR_ICON} 创建目录失败: {e}")
         return []
 
     news_file = os.path.join(news_dir, f"{symbol}_news.json")
-    print(f"新闻文件路径: {news_file}")
+    logger.info(f"{WAIT_ICON} 新闻文件路径: {news_file}")
 
     # 检查是否需要更新新闻
     need_update = True
@@ -59,29 +60,29 @@ def get_stock_news(symbol: str, max_news: int = 10) -> list:
                 if data.get("date") == today:
                     cached_news = data.get("news", [])
                     if len(cached_news) >= max_news:
-                        print(f"使用缓存的新闻数据: {news_file}")
+                        logger.info(f"{SUCCESS_ICON} 使用缓存的新闻数据: {news_file}")
                         return cached_news[:max_news]
                     else:
-                        print(
-                            f"缓存的新闻数量({len(cached_news)})不足，需要获取更多新闻({max_news}条)")
+                        logger.info(
+                            f"{WAIT_ICON} 缓存的新闻数量({len(cached_news)})不足，需要获取更多新闻({max_news}条)")
         except Exception as e:
-            print(f"读取缓存文件失败: {e}")
+            logger.error(f"{ERROR_ICON} 读取缓存文件失败: {e}")
 
-    print(f'开始获取{symbol}的新闻数据...')
+    logger.info(f"{WAIT_ICON} 开始获取{symbol}的新闻数据...")
 
     try:
         # 获取新闻列表
         news_df = ak.stock_news_em(symbol=symbol)
         if news_df is None or len(news_df) == 0:
-            print(f"未获取到{symbol}的新闻数据")
+            logger.warning(f"{ERROR_ICON} 未获取到{symbol}的新闻数据")
             return []
 
-        print(f"成功获取到{len(news_df)}条新闻")
+        logger.info(f"{SUCCESS_ICON} 成功获取到{len(news_df)}条新闻")
 
         # 实际可获取的新闻数量
         available_news_count = len(news_df)
         if available_news_count < max_news:
-            print(f"警告：实际可获取的新闻数量({available_news_count})少于请求的数量({max_news})")
+            logger.warning(f"{ERROR_ICON} 警告：实际可获取的新闻数量({available_news_count})少于请求的数量({max_news})")
             max_news = available_news_count
 
         # 获取指定条数的新闻（考虑到可能有些新闻内容为空，多获取50%）
@@ -113,10 +114,10 @@ def get_stock_news(symbol: str, max_news: int = 10) -> list:
                     "keyword": keyword.strip()
                 }
                 news_list.append(news_item)
-                print(f"成功添加新闻: {news_item['title']}")
+                logger.info(f"{SUCCESS_ICON} 成功添加新闻: {news_item['title']}")
 
             except Exception as e:
-                print(f"处理单条新闻时出错: {e}")
+                logger.error(f"{ERROR_ICON} 处理单条新闻时出错: {e}")
                 continue
 
         # 按发布时间排序
@@ -133,23 +134,24 @@ def get_stock_news(symbol: str, max_news: int = 10) -> list:
             }
             with open(news_file, 'w', encoding='utf-8') as f:
                 json.dump(save_data, f, ensure_ascii=False, indent=2)
-            print(f"成功保存{len(news_list)}条新闻到文件: {news_file}")
+            logger.info(f"{SUCCESS_ICON} 成功保存{len(news_list)}条新闻到文件: {news_file}")
         except Exception as e:
-            print(f"保存新闻数据到文件时出错: {e}")
+            logger.error(f"{ERROR_ICON} 保存新闻数据到文件时出错: {e}")
 
         return news_list
 
     except Exception as e:
-        print(f"获取新闻数据时出错: {e}")
+        logger.error(f"{ERROR_ICON} 获取新闻数据时出错: {e}")
         return []
 
 
-def get_news_sentiment(news_list: list, num_of_news: int = 5) -> float:
+def get_news_sentiment(news_list: list, num_of_news: int = 5, model: list = ["moonshot"]) -> float:
     """分析新闻情感得分
 
     Args:
         news_list (list): 新闻列表
         num_of_news (int): 用于分析的新闻数量，默认为5条
+        model (list): 用于分析的模型，默认为["moonshot"]
 
     Returns:
         float: 情感得分，范围[-1, 1]，-1最消极，1最积极
@@ -157,11 +159,6 @@ def get_news_sentiment(news_list: list, num_of_news: int = 5) -> float:
     if not news_list:
         return 0.0
 
-    # # 获取项目根目录
-    # project_root = os.path.dirname(os.path.dirname(
-    #     os.path.dirname(os.path.abspath(__file__))))
-
-    # 检查是否有缓存的情感分析结果
     # 检查是否有缓存的情感分析结果
     cache_file = "src/data/sentiment_cache.json"
     os.makedirs(os.path.dirname(cache_file), exist_ok=True)
@@ -174,19 +171,19 @@ def get_news_sentiment(news_list: list, num_of_news: int = 5) -> float:
 
     # 检查缓存
     if os.path.exists(cache_file):
-        print("发现情感分析缓存文件")
+        logger.info(f"{WAIT_ICON} 发现情感分析缓存文件")
         try:
             with open(cache_file, 'r', encoding='utf-8') as f:
                 cache = json.load(f)
                 if news_key in cache:
-                    print("使用缓存的情感分析结果")
+                    logger.info(f"{SUCCESS_ICON} 使用缓存的情感分析结果")
                     return cache[news_key]
-                print("未找到匹配的情感分析缓存")
+                logger.info(f"{WAIT_ICON} 未找到匹配的情感分析缓存")
         except Exception as e:
-            print(f"读取情感分析缓存出错: {e}")
+            logger.error(f"{ERROR_ICON} 读取情感分析缓存出错: {e}")
             cache = {}
     else:
-        print("未找到情感分析缓存文件，将创建新文件")
+        logger.info(f"{WAIT_ICON} 未找到情感分析缓存文件，将创建新文件")
         cache = {}
 
     # 准备系统消息
@@ -233,32 +230,38 @@ def get_news_sentiment(news_list: list, num_of_news: int = 5) -> float:
 
     try:
         # 获取LLM分析结果
-        result = get_chat_completion([system_message, user_message])
-        if result is None:
-            print("Error: PI error occurred, LLM returned None")
+        logger.info(f"{WAIT_ICON} 正在使用LLM分析新闻情感...")
+        results = get_chat_completion([system_message, user_message], model)
+        if len(results) == 0:
+            logger.error(f"{ERROR_ICON} LLM返回空值")
             return 0.0
 
         # 提取数字结果
-        try:
-            sentiment_score = float(result.strip())
-        except ValueError as e:
-            print(f"Error parsing sentiment score: {e}")
-            print(f"Raw result: {result}")
-            return 0.0
+        sentiment_scores = []
+        for res_model, res_score in results.items():
+            try:
+                sentiment_score = float(res_score.strip())
+                logger.info(f"{SUCCESS_ICON} 模型 {res_model} 的情感分析得分: {sentiment_score}")
+                sentiment_scores.append(sentiment_score)
+            except ValueError as e:
+                logger.error(f"{ERROR_ICON} 模型 {res_model} 解析情感得分出错: {e}")
+                logger.error(f"{ERROR_ICON} 原始结果: {result}")
+                continue
 
         # 确保分数在-1到1之间
-        sentiment_score = max(-1.0, min(1.0, sentiment_score))
+        sentiment_score_combine = max(-1.0, min(1.0, sum(sentiment_scores) * 1.0/len(sentiment_scores)))
 
         # 缓存结果
-        cache[news_key] = sentiment_score
+        cache[news_key] = sentiment_score_combine
         try:
             with open(cache_file, 'w', encoding='utf-8') as f:
                 json.dump(cache, f, ensure_ascii=False, indent=2)
+            logger.info(f"{SUCCESS_ICON} 情感分析结果已缓存")
         except Exception as e:
-            print(f"Error writing cache: {e}")
+            logger.error(f"{ERROR_ICON} 写入缓存出错: {e}")
 
         return sentiment_score
 
     except Exception as e:
-        print(f"Error analyzing news sentiment: {e}")
+        logger.error(f"{ERROR_ICON} 分析新闻情感时出错: {e}")
         return 0.0  # 出错时返回中性分数

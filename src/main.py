@@ -16,7 +16,7 @@ from src.utils.logger_config import setup_logger, get_logger
 
 
 ##### Run the Hedge Fund #####
-def run_hedge_fund(app, ticker: str, start_date: str, end_date: str, portfolio: dict, show_reasoning: bool = False, num_of_news: int = 5):
+def run_hedge_fund(app, model: str, ticker: str, start_date: str, end_date: str, portfolio: dict, show_reasoning: bool = False, num_of_news: int = 5):
     final_state = app.invoke(
         {
             "messages": [
@@ -32,6 +32,7 @@ def run_hedge_fund(app, ticker: str, start_date: str, end_date: str, portfolio: 
                 "num_of_news": num_of_news,
             },
             "metadata": {
+                "model": model,
                 "show_reasoning": show_reasoning,
             }
         },
@@ -92,6 +93,8 @@ if __name__ == "__main__":
                         help='Initial cash amount (default: 100,000)')
     parser.add_argument('--initial-position', type=int, default=0,
                         help='Initial stock position (default: 0)')
+    parser.add_argument('--model', type=str, default='moonshot',
+                        help='Model to use for chat completion (default: moonshot), use comma to separate multiple models.')
 
     args = parser.parse_args()
 
@@ -134,6 +137,7 @@ if __name__ == "__main__":
 
     result = run_hedge_fund(
         app=app,
+        model=args.model.split(','),
         ticker=args.ticker,
         start_date=start_date.strftime('%Y-%m-%d'),
         end_date=end_date.strftime('%Y-%m-%d'),
