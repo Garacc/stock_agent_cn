@@ -3,7 +3,7 @@ from src.utils.openrouter_config import get_chat_completion
 
 from src.agents.state import AgentState
 from src.utils.api import get_financial_metrics, get_financial_statements, get_market_data, get_price_history
-from src.utils.logger_config import get_logger, ERROR_ICON
+from src.utils.logger_config import get_logger, ERROR_ICON, SUCCESS_ICON
 
 from datetime import datetime, timedelta
 import pandas as pd
@@ -73,6 +73,8 @@ def market_data_agent(state: AgentState):
 
     # 转换价格数据为字典格式
     prices_dict = prices_df.to_dict('records')
+    
+    logger.info(f"{SUCCESS_ICON} [MARKET_DATA_AGENT] 市场数据Agent执行完成。")
 
     return {
         "messages": messages,

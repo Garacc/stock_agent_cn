@@ -2,7 +2,7 @@ import math
 from typing import Dict
 
 from langchain_core.messages import HumanMessage
-
+from src.utils.logger_config import get_logger, ERROR_ICON, SUCCESS_ICON
 from src.agents.state import AgentState, show_agent_reasoning
 
 import json
@@ -11,6 +11,8 @@ import numpy as np
 
 from src.utils.api import prices_to_df
 
+# 设置日志记录
+logger = get_logger()
 
 ##### Technical Analyst #####
 def technical_analyst_agent(state: AgentState):
@@ -22,6 +24,7 @@ def technical_analyst_agent(state: AgentState):
     4. Volatility Analysis
     5. Statistical Arbitrage Signals
     """
+    logger.info("[TECHNICAL_ANALYST_AGENT] 开始执行技术分析Agent ...")
     show_reasoning = state["metadata"]["show_reasoning"]
     data = state["data"]
     prices = data["prices"]
@@ -212,6 +215,8 @@ def technical_analyst_agent(state: AgentState):
 
     if show_reasoning:
         show_agent_reasoning(analysis_report, "Technical Analyst")
+
+    logger.info(f"{SUCCESS_ICON} [TECHNICAL_ANALYST_AGENT] 技术分析Agent执行完成。")
 
     return {
         "messages": [message],
