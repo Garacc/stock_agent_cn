@@ -263,7 +263,7 @@ def get_news_sentiment(news_list: list, num_of_news: int = 5, model: list = ["mo
             except Exception as e:
                 logger.error(f"{ERROR_ICON} 写入缓存出错: {e}")
 
-            return sentiment_score_combine  # 修正返回值
+        return sentiment_score_combine  # 修正返回值
 
     except Exception as e:
         logger.error(f"{ERROR_ICON} 分析新闻情感时出错: {e}")
