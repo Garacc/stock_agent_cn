@@ -16,6 +16,8 @@ stock_agent_cn v1.1.0版本，当前代码已经可以在常规上网环境下�
 - ChangeLog：添加了ChangeLog，方便后续版本更新的记录；
 
 ### Changes
+**Function**
+- CommonChanges：优化了部分代码，提高了代码的可读性和可维护性；
 
 ## [v1.0.0] - 2025-03-02
 ### Brief
