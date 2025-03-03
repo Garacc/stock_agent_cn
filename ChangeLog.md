@@ -13,11 +13,11 @@ stock_agent_cn v1.1.0版本，当前代码已经可以在常规上网环境下�
 - Logger：独立Logger，并将几乎全部打印信息写入Logger中，方便后续信息回溯与判断；
 - MultiModel Compatibility：添加了多模型的兼容功能，支持同时使用多个模型进行决策；
 **Docs**
-- ChangeLog：添加了ChangeLog，方便后续版本更新的记录；
+- ChangeLog：添加了ChangeLog，方便后续版本更新的记录。
 
 ### Changes
 **Function**
-- CommonChanges：优化了部分代码，提高了代码的可读性和可维护性；
+- CommonChanges：优化了部分代码，提高了代码的可读性和可维护性。
 
 ## [v1.0.0] - 2025-03-02
 ### Brief
